@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import {Delete} from '@element-plus/icons-vue'
-import {reactive, ref} from "vue";
+import {reactive, ref, toRaw} from "vue";
 import {Pedido} from "../classes/Pedido.js";
 import {PiezasIndividuales} from "../classes/PiezasIndividuales.ts";
+import {CustomResponse} from "../../electron/shared/CustomResponse.ts";
+import {Cliente} from "../../electron/shared/Types.ts";
 
 let nombreCliente = ref('');
+let idCliente: number | null = null;
 let precioRopa = ref(18);
 let precioPlanchado = ref(7);
 let ropa = ref(0.0);
@@ -16,6 +19,7 @@ let piezaIndividual = reactive(new PiezasIndividuales('', (0), (0)));
 let listaPedido: Pedido[] = reactive([]);
 let totalPedidos = ref(0);
 let mensaje = ref('');
+let tipoMensaje = ref('');
 
 function agregarRopa() {
   let pedido = new Pedido('lavado', ropa.value, precioRopa.value)
@@ -48,29 +52,66 @@ function agregarPiezaIndividual() {
   piezaIndividual.precio = 70
 }
 
-function registrarPedido() {
-  mensaje.value = "registro guardado";
+async function registrarPedido() {
+  const result = await window.electronApi.insertOrden(nombreCliente.value, toRaw(listaPedido), idCliente);
+  if (result.estatus == 200) {
+    mensaje.value = "registro guardado";
+    tipoMensaje.value = 'success';
+    restartForm()
+  } else {
+    mensaje.value = result.statusText;
+    tipoMensaje.value = 'error'
+  }
   setTimeout(function () {
     mensaje.value = '';
+
   }, 5000)
+
 }
 
-function onCloseMensaje()
-{
+function onCloseMensaje() {
   mensaje.value = '';
+}
+
+const querySearch = (querystring: string, cb: (arg: any) => void) => {
+  const results = window.electronApi.searchUsers(querystring);
+  results.then((resp: CustomResponse) => {
+    const suggestions = resp.data.map((client:Cliente) => {
+      return {
+        value: client.nombre,
+        id: client.id,
+      };
+    });
+    cb(suggestions);
+  })
+}
+
+const handleSelect = (item: Record<string, any>) => {
+  idCliente = item.id
+}
+
+function restartForm() {
+  idCliente = null;
+  nombreCliente.value = '';
+  listaPedido.length = 0;
+  totalPedidos.value = 0;
+}
+
+function handleClearClient() {
+  idCliente = null;
 }
 </script>
 
 <template>
-  <el-row style="margin-bottom: 20px" gutter="20" v-if="mensaje.length > 0">
-    <el-col :span="24">
-      <el-alert @close="onCloseMensaje" type="success"> {{ mensaje }}</el-alert>
+  <el-row style="margin-bottom: 20px" gutter=20 v-if="mensaje.length > 0">
+    <el-col :span=24>
+      <el-alert @close="onCloseMensaje" :type="tipoMensaje"> {{ mensaje }}</el-alert>
     </el-col>
   </el-row>
 
   <el-container class="containerModulo">
-    <el-row gutter="20">
-      <el-col :span="12">
+    <el-row gutter=20>
+      <el-col :span=12>
         <el-header>
           Pedido
         </el-header>
@@ -81,7 +122,12 @@ function onCloseMensaje()
         </el-row>
         <el-row>
           <el-col>
-            <el-input placeholder="Nombre del cliente" v-model="nombreCliente"/>
+            <el-autocomplete
+                :fetch-suggestions="querySearch"
+                @select="handleSelect"
+                clearable
+                @clear="handleClearClient"
+                placeholder="Nombre del cliente" v-model="nombreCliente"/>
           </el-col>
         </el-row>
         <el-collapse accordion>
@@ -104,7 +150,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 max=9999 v-model="ropa" step=.1 precision="1"/>
+                  <el-input-number min=1 max=9999 v-model="ropa" step=.1 precision=1 />
                 </el-col>
               </el-row>
             </el-main>
@@ -122,7 +168,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 max=9999 placeholder="precio" v-model="precioPlanchado" step="1"/>
+                  <el-input-number min=1 max=9999 placeholder="precio" v-model="precioPlanchado" step=1 />
                 </el-col>
               </el-row>
               <el-row>
@@ -142,7 +188,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=0 max=9999 placeholder="Cantidad" v-model="planchados.piezas" step="1"/>
+                  <el-input-number min=0 max=9999 placeholder="Cantidad" v-model="planchados.piezas" step=1 />
                 </el-col>
               </el-row>
             </el-main>
@@ -159,7 +205,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input minlength="3" placeholder="Almohada, edredon, etc" v-model="piezaIndividual.descripcion"/>
+                  <el-input minlength=3 placeholder="Almohada, edredon, etc" v-model="piezaIndividual.descripcion"/>
                 </el-col>
               </el-row>
               <el-row>
@@ -169,7 +215,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min="1" placeholder="10, 9" v-model="piezaIndividual.piezas"/>
+                  <el-input-number min=1 placeholder="10, 9" v-model="piezaIndividual.piezas"/>
                 </el-col>
               </el-row>
               <el-row>
@@ -179,7 +225,7 @@ function onCloseMensaje()
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number placeholder="70" min="20" step="5" v-model="piezaIndividual.precio">
+                  <el-input-number placeholder="70" min=20 step=5 v-model="piezaIndividual.precio">
                     <template #prefix>
                       <span>$</span>
                     </template>
@@ -193,25 +239,25 @@ function onCloseMensaje()
           </el-collapse-item>
         </el-collapse>
       </el-col>
-      <el-col :span="12">
+      <el-col :span=12>
         <el-header>
           Resumen
         </el-header>
-        <el-row gutter="20">
-          <el-col :span="2">
+        <el-row gutter=20>
+          <el-col :span=2>
 
           </el-col>
-          <el-col :span="8">
+          <el-col :span=8>
             <p>Descripción</p>
           </el-col>
-          <el-col :span="8">
+          <el-col :span=8>
             <p>Cantidad</p>
           </el-col>
-          <el-col :span="6" class="alineadoIzquierda">
+          <el-col :span=6 class="alineadoIzquierda">
             <p>Subtotal</p>
           </el-col>
         </el-row>
-        <el-row v-for="(item, index) in listaPedido" :key="index" gutter="20">
+        <el-row v-for="(item, index) in listaPedido" :key="index" gutter=20>
           <el-col :span="2">
             <el-button circle @click="removerSubpedido(index)" type="danger" :icon="Delete"/>
           </el-col>
@@ -237,7 +283,7 @@ function onCloseMensaje()
             <p v-else>{{ item.subtotal }}</p>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
+        <el-row :gutter=20>
           <el-col :span="8" :offset="2">
             <p>Total:</p>
           </el-col>

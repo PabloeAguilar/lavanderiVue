@@ -1,0 +1,106 @@
+import { ipcMain } from 'electron';
+import { DB } from './Database';
+import {SqliteError} from "better-sqlite3";
+import {CustomResponse} from "../shared/CustomResponse.ts";
+import {Pedido} from "../../src/classes/Pedido.ts";
+
+export function setupDbIpcHandlers() {
+    ipcMain.handle('db:query', (event, sql: string, params: any[]) => {
+        const db = DB.getInstance();
+        return db.prepare(sql).all(params);
+    });
+
+    ipcMain.handle('db:run', (event, sql: string, params: any[]) => {
+        const db = DB.getInstance();
+        return db.prepare(sql).run(params);
+    });
+
+    ipcMain.handle('db:getLastOrders', (event, limit: number) => {
+        const db = DB.getInstance();
+        return db.prepare("SELECT * FROM ordenes order by id desc limit ?").run(limit);
+    });
+
+    ipcMain.handle('db:getUserInsert', (event, params: any[]) => {
+        const db = DB.getInstance();
+        try {
+            let respuesta:CustomResponse = {
+                data: db.prepare("Insert into clientes (nombre, fechaRegistro) values (?, ?)").run(params).lastInsertRowid,
+                estatus: 200,
+                statusText: "Todo correcto",
+            }
+            return respuesta;
+
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
+    });
+
+    ipcMain.handle('db:getOrdenInsert', (event, params: any[]) => {
+        const db = DB.getInstance();
+        try {
+            let respuesta:CustomResponse = {
+                data: db.prepare("Insert into ordenes (idCliente, fechaRegistro) values (?, ?)").run(params).lastInsertRowid,
+                estatus: 200,
+                statusText: "Todo correcto",
+            }
+            return respuesta;
+
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
+    })
+
+    ipcMain.handle('db:insertPedido', (event, idOrden:number, params: Pedido, fecha:string) => {
+        const db = DB.getInstance();
+        try {
+            console.log("idorden: " + idOrden);
+            console.log("params:", params);
+            console.log("fecha:", fecha);
+            let respuesta:CustomResponse = {
+                data: db.prepare("Insert into pedidos (idOrden, cantidad, descripcion, precio,  subtotal, tipo, fechaRegistro) values (?, ?, ?, ?, ?, ?, ?)")
+                    .run(idOrden, params.cantidad, params.descripcion, params.precio, params.subtotal, params.tipo, fecha).lastInsertRowid,
+                estatus: 200,
+                statusText: "Todo correcto",
+            }
+            return respuesta;
+
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
+    })
+
+    ipcMain.handle('db:searchUsers',  (event, query: string) => {
+        const db = DB.getInstance();
+        try {
+            let respuesta:CustomResponse = {
+                data: db.prepare("SELECT * From clientes WHERE nombre like ? limit 10").all(query),
+                estatus: 200,
+                statusText: "Todo correcto",
+            }
+            return respuesta;
+
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
+    })
+}

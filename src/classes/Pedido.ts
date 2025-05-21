@@ -1,25 +1,21 @@
 export class Pedido {
+    readonly subtotal: number;
 
-    tipo: string;
-    cantidad: number;
-    precio: number;
-    descripcion: string | null;
-    subtotal:number
-
-    constructor(tipo:string, cantidad:number, precio:number) {
-        this.tipo = tipo;
-        this.cantidad = cantidad;
-        this.precio = precio;
-        this.descripcion = null;
-        if (tipo === 'planchados') {
-            if (isNaN(Number(this.cantidad)) || Number(cantidad) === 0) {
-                this.subtotal = 0
-            } else {
-                this.subtotal = this.cantidad * this.precio
-            }
-        } else {
-            this.subtotal = Math.floor(precio * cantidad);
-        }
+    constructor(
+        public tipo: string,
+        public cantidad: number,
+        public precio: number,
+        public descripcion: string | null = null
+    ) {
+        this.subtotal = this.calcularSubtotal();
     }
 
+    private calcularSubtotal(): number {
+        if (this.tipo === 'planchados') {
+            return isNaN(this.cantidad) || this.cantidad === 0
+                ? 0
+                : this.cantidad * this.precio;
+        }
+        return Math.floor(this.precio * this.cantidad);
+    }
 }
