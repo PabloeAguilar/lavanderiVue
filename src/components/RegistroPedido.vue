@@ -52,7 +52,25 @@ function agregarPiezaIndividual() {
   piezaIndividual.precio = 70
 }
 
+function comprobacionPedido() :string | undefined {
+  console.log(nombreCliente.value.trim())
+  if (nombreCliente.value.trim().length < 1) {
+    return 'Es necesario un nombre del cliente'
+  }
+  if (listaPedido.length < 1) {
+    return 'Es necesario algún pedido de ropa, planchados, etc'
+  }
+  return undefined;
+}
+
 async function registrarPedido() {
+  let observacionesPedido:string|undefined = comprobacionPedido();
+  if (observacionesPedido !== undefined ) {
+    mensaje.value = observacionesPedido;
+    tipoMensaje.value = 'error';
+    reiniciarMensaje();
+    return;
+  }
   const result = await window.electronApi.insertOrden(nombreCliente.value, toRaw(listaPedido), idCliente);
   if (result.estatus == 200) {
     mensaje.value = "registro guardado";
@@ -62,6 +80,11 @@ async function registrarPedido() {
     mensaje.value = result.statusText;
     tipoMensaje.value = 'error'
   }
+  reiniciarMensaje();
+
+}
+
+function reiniciarMensaje() {
   setTimeout(function () {
     mensaje.value = '';
 
@@ -150,7 +173,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 max=9999 v-model="ropa" step=.1 precision=1 />
+                  <el-input-number @focus="$event.target.select()" min=1 max=9999 v-model="ropa" step=.1 precision=1 />
                 </el-col>
               </el-row>
             </el-main>

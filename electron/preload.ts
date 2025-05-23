@@ -28,7 +28,9 @@ contextBridge.exposeInMainWorld('electronApi', {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
-  dbLastOrders: (limit: number) => ipcRenderer.invoke('db:getLastOrders', limit)
+  dbLastOrders: (limit: number, idCliente? : number) => ipcRenderer.invoke('db:getLastOrders', limit, idCliente)
+  ,
+  getPedidosByOrder: (idOrden: number) => ipcRenderer.invoke('db:getPedidosByOrder', idOrden)
   ,
   insertOrden: async (nameUser:string, pedidos:[], idUser?:number,) => {
     console.log("orden inserción recibida");

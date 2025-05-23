@@ -5,7 +5,8 @@ export class Pedido {
         public tipo: string,
         public cantidad: number,
         public precio: number,
-        public descripcion: string | null = null
+        public descripcion: string | null = null,
+        public id?: number
     ) {
         this.subtotal = this.calcularSubtotal();
     }

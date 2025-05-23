@@ -15,10 +15,51 @@ export function setupDbIpcHandlers() {
         return db.prepare(sql).run(params);
     });
 
-    ipcMain.handle('db:getLastOrders', (event, limit: number) => {
+    ipcMain.handle('db:getLastOrders', (event, limit: number, idCliente? : number) => {
         const db = DB.getInstance();
-        return db.prepare("SELECT * FROM ordenes order by id desc limit ?").run(limit);
+        try {
+            if (idCliente) {
+                let respuesta : CustomResponse = {
+                    data: db.prepare("SELECT o.*, c.nombre FROM ordenes o join clientes c on o.idCliente = c.id WHERE idCliente = ?  order by id desc limit ?").all(idCliente, limit),
+                    estatus: 200,
+                    statusText: 'OK',
+                }
+                return respuesta;
+            } else {
+                let respuesta : CustomResponse = {
+                    data: db.prepare("SELECT o.*, c.nombre FROM ordenes o join clientes c on o.idCliente = c.id order by id desc limit ?").all(limit),
+                    estatus: 200,
+                    statusText: 'OK',
+                }
+                return respuesta;
+            }
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
     });
+
+    ipcMain.handle('db:getPedidosByOrder', (event, idOrder: number) => {
+        const db = DB.getInstance();
+        try {
+            const respuesta:CustomResponse = {
+                estatus: 200,
+                statusText: 'OK',
+                data: db.prepare('SELECT * FROM pedidos o where o.idOrden = ? ').all(idOrder)
+            }
+            return respuesta
+        }  catch(e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message
+            }
+        }
+    })
 
     ipcMain.handle('db:getUserInsert', (event, params: any[]) => {
         const db = DB.getInstance();

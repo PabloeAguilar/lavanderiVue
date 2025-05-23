@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HelloWorld from './components/HelloWorld.vue'; // Ejemplo de importación de un componente
 import RegistroPedido from "./components/RegistroPedido.vue";
+import BusquedaPedido from "./components/BusquedaPedido.vue";
 
 const rutas = [
     {
@@ -17,6 +18,11 @@ const rutas = [
         name: 'RegistrarPedido',
         component: RegistroPedido
     },
+    {
+        path: '/busqueda',
+        name: 'Busqueda',
+        component: BusquedaPedido
+    }
 
     // Otras rutas...
 ];
