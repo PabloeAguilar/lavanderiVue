@@ -8,4 +8,6 @@ export interface Orden {
     idCliente: number,
     fechaRegistro: string
     nombre: string,
+    comentarios?: string,
+    adelanto?: number
 }

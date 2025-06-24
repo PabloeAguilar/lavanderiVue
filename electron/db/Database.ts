@@ -29,13 +29,17 @@ export class DB {
                     fechaRegistro text not null
                 );
             `;
-            const ordenesQuery = `CREATE TABLE IF NOT EXISTS ordenes
+            const ordenesQuery = `CREATE TABLE if not exists ordenes
                                   (
                                       id            INTEGER PRIMARY KEY AUTOINCREMENT,
                                       idCliente     INTEGER not null,
                                       fechaRegistro text    not null,
+                                      fechaEntrega  text,
+                                      comentarios   text,
+                                      adelanto      integer,
                                       foreign key (idCliente) references clientes (id)
-                                  );`
+                                  )
+                                  ;`
             const pedidosQuery =  `CREATE TABLE IF NOT EXISTS pedidos
                                    (
                                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,12 +59,25 @@ export class DB {
                                        preccio INTEGER      NOT NULL
                                    );`
 
+            const configsQuery = `CREATE TABLE IF NOT EXISTS configuraciones
+                                  (
+                                      id     integer not null
+                                      constraint configuraciones_pk
+                                      primary key autoincrement,
+                                      nombre TEXT    not null
+                                      constraint configuraciones_pk_2
+                                      unique,
+                                      valor  TEXT
+                                  );`
+
+
+
             DB.instance.prepare(clientesQuery).run();
             DB.instance.prepare(ordenesQuery).run();
             DB.instance.prepare(pedidosQuery).run();
             DB.instance.prepare(preciosQuery).run();
+            DB.instance.prepare(configsQuery).run();
 
-            console.log('basic tables ensured.');
 
         } catch (error) {
             console.error('Failed to initialize database:', error);

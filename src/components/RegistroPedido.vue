@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import {Delete} from '@element-plus/icons-vue'
-import {reactive, ref, toRaw} from "vue";
+import {reactive, ref, toRaw, computed} from "vue";
 import {Pedido} from "../classes/Pedido.js";
 import {PiezasIndividuales} from "../classes/PiezasIndividuales.ts";
 import {CustomResponse} from "../../electron/shared/CustomResponse.ts";
 import {Cliente} from "../../electron/shared/Types.ts";
+import {ElNotification} from "element-plus";
 
 let nombreCliente = ref('');
 let idCliente: number | null = null;
@@ -20,6 +21,18 @@ let listaPedido: Pedido[] = reactive([]);
 let totalPedidos = ref(0);
 let mensaje = ref('');
 let tipoMensaje = ref('');
+let comentariosGenerales = ref('');
+let adelanto = ref(0);
+let ordenId = ref(0);
+const restante = computed(() => {
+  return totalPedidos.value - adelanto.value;
+})
+
+function onInputAdelanto(){
+  if (adelanto.value > totalPedidos.value) {
+    adelanto.value = totalPedidos.value;
+  }
+}
 
 function agregarRopa() {
   let pedido = new Pedido('lavado', ropa.value, precioRopa.value)
@@ -71,17 +84,35 @@ async function registrarPedido() {
     reiniciarMensaje();
     return;
   }
-  const result = await window.electronApi.insertOrden(nombreCliente.value, toRaw(listaPedido), idCliente);
+  const result = await window.electronApi.insertOrden(nombreCliente.value, toRaw(listaPedido), comentariosGenerales.value, adelanto.value, idCliente);
   if (result.estatus == 200) {
     mensaje.value = "registro guardado";
     tipoMensaje.value = 'success';
-    restartForm()
+    ordenId.value = result.data.orden.data
+    mostrarMensaje("Guardado correcto", "success", "registro guardado", 0)
   } else {
     mensaje.value = result.statusText;
     tipoMensaje.value = 'error'
   }
   reiniciarMensaje();
 
+}
+
+function mostrarMensaje(titulo:string, tipo:String, mensaje:string, duration:number) {
+  ElNotification({
+    title: titulo,
+    message: mensaje,
+    type:tipo,
+    duration:duration
+  })
+}
+
+function imprimirPedido() {
+  if (ordenId.value == 0) {
+    mostrarMensaje("No se puede imprimir", "info", "Registre el pedido para imprimirlo", 5);
+    return;
+  }
+  window.electronApi.imprimirRecibo(ordenId.value, toRaw(listaPedido))
 }
 
 function reiniciarMensaje() {
@@ -117,7 +148,9 @@ function restartForm() {
   idCliente = null;
   nombreCliente.value = '';
   listaPedido.length = 0;
+  adelanto.value = 0;
   totalPedidos.value = 0;
+  comentariosGenerales.value = '';
 }
 
 function handleClearClient() {
@@ -191,7 +224,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 max=9999 placeholder="precio" v-model="precioPlanchado" step=1 />
+                  <el-input-number @focus="$event.target.select()" min=1 max=9999 placeholder="precio" v-model="precioPlanchado" step=1 />
                 </el-col>
               </el-row>
               <el-row>
@@ -211,7 +244,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=0 max=9999 placeholder="Cantidad" v-model="planchados.piezas" step=1 />
+                  <el-input-number @focus="$event.target.select()" min=0 max=9999 placeholder="Cantidad" v-model="planchados.piezas" step=1 />
                 </el-col>
               </el-row>
             </el-main>
@@ -238,7 +271,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 placeholder="10, 9" v-model="piezaIndividual.piezas"/>
+                  <el-input-number @focus="$event.target.select()" min=1 placeholder="10, 9" v-model="piezaIndividual.piezas"/>
                 </el-col>
               </el-row>
               <el-row>
@@ -248,7 +281,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number placeholder="70" min=20 step=5 v-model="piezaIndividual.precio">
+                  <el-input-number @focus="$event.target.select()" placeholder="70" min=20 step=5 v-model="piezaIndividual.precio">
                     <template #prefix>
                       <span>$</span>
                     </template>
@@ -261,6 +294,7 @@ function handleClearClient() {
             </el-footer>
           </el-collapse-item>
         </el-collapse>
+        <el-input placeholder="Comentarios adicionales" v-model="comentariosGenerales"/>
       </el-col>
       <el-col :span=12>
         <el-header>
@@ -314,8 +348,33 @@ function handleClearClient() {
             <p>${{ totalPedidos }}</p>
           </el-col>
         </el-row>
+        <el-row :gutter=20>
+          <el-col :span="8" :offset="2">
+            <p>Adelanto:</p>
+          </el-col>
+          <el-col class="alineadoIzquierda" :span="12" :offset="2">
+            <el-input-number v-model="adelanto" min="0" @change="onInputAdelanto"  />
+          </el-col>
+        </el-row>
+        <el-row :gutter=20>
+          <el-col :span="8" :offset="2">
+            <p>Restante:</p>
+          </el-col>
+          <el-col class="alineadoIzquierda" :span="6" :offset="8">
+            <p>${{ restante }}</p>
+          </el-col>
+        </el-row>
         <el-footer>
-          <el-button @click="registrarPedido">Registrar</el-button>
+          <el-row>
+            <el-button @click="registrarPedido">Registrar</el-button>
+          </el-row>
+          <el-row>
+            <el-button @click="restartForm">Limpiar</el-button>
+          </el-row>
+          <el-row v-if="ordenId != 0">
+            <el-button @click="imprimirPedido">Imprimir</el-button>
+          </el-row>
+
         </el-footer>
 
       </el-col>

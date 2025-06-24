@@ -15,6 +15,32 @@ export function setupDbIpcHandlers() {
         return db.prepare(sql).run(params);
     });
 
+    ipcMain.handle('db:searchConfigs', (event) => {
+        const db = DB.getInstance();
+        const configs = db.prepare("SELECT * FROM configuraciones").all();
+        if (configs.length == 0) {
+            // necesarias para la generación de ticket
+            const necesaryConfigs = `
+                INSERT INTO configuraciones (nombre) VALUES ('rfc'), ('regimen'), ('direccion'), ('horario'), ('telefono'), ('notas') ;
+            `
+            db.prepare(necesaryConfigs).run();
+        }
+        return db.prepare("SELECT * FROM configuraciones").all();
+    })
+
+    ipcMain.handle('db:searchOrden', (event, idOrden: number) => {
+        const db = DB.getInstance();
+        console.log("Se va a buscar la orden con id: " + idOrden);
+        let orden = db.prepare("SELECT o.*, c.nombre FROM ordenes o join clientes c on o.idCliente = c.id WHERE o.id = ?").get(idOrden);
+        let respuesta:CustomResponse = {
+            data: orden,
+            estatus: 200,
+            statusText: 'OK',
+        }
+        console.log(respuesta);
+        return respuesta;
+    })
+
     ipcMain.handle('db:getLastOrders', (event, limit: number, idCliente? : number) => {
         const db = DB.getInstance();
         try {
@@ -85,7 +111,7 @@ export function setupDbIpcHandlers() {
         const db = DB.getInstance();
         try {
             let respuesta:CustomResponse = {
-                data: db.prepare("Insert into ordenes (idCliente, fechaRegistro) values (?, ?)").run(params).lastInsertRowid,
+                data: db.prepare("Insert into ordenes (idCliente, fechaRegistro, comentarios, adelanto) values (?, ?, ?, ?)").run(params).lastInsertRowid,
                 estatus: 200,
                 statusText: "Todo correcto",
             }
@@ -104,9 +130,6 @@ export function setupDbIpcHandlers() {
     ipcMain.handle('db:insertPedido', (event, idOrden:number, params: Pedido, fecha:string) => {
         const db = DB.getInstance();
         try {
-            console.log("idorden: " + idOrden);
-            console.log("params:", params);
-            console.log("fecha:", fecha);
             let respuesta:CustomResponse = {
                 data: db.prepare("Insert into pedidos (idOrden, cantidad, descripcion, precio,  subtotal, tipo, fechaRegistro) values (?, ?, ?, ?, ?, ?, ?)")
                     .run(idOrden, params.cantidad, params.descripcion, params.precio, params.subtotal, params.tipo, fecha).lastInsertRowid,

@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('electronApi', {
   ,
   getPedidosByOrder: (idOrden: number) => ipcRenderer.invoke('db:getPedidosByOrder', idOrden)
   ,
-  insertOrden: async (nameUser:string, pedidos:[], idUser?:number,) => {
+  insertOrden: async (nameUser:string, pedidos:[], comentarios?:String, adelanto:number, idUser?:number,) => {
     console.log("orden inserción recibida");
     let fecha = new Date();
     let fechaString = new Intl.DateTimeFormat(["es-MX", "en-Us"], options).format(fecha);
@@ -44,7 +44,7 @@ contextBridge.exposeInMainWorld('electronApi', {
       }
       idUser = user.data;
     }
-    let orden = await ipcRenderer.invoke('db:getOrdenInsert', [idUser, fechaString]);
+    let orden = await ipcRenderer.invoke('db:getOrdenInsert', [idUser, fechaString, comentarios, adelanto]);
     if (orden.estatus == 400) {
       return orden;
     }
@@ -55,14 +55,32 @@ contextBridge.exposeInMainWorld('electronApi', {
     let respuesta:CustomResponse = {
       estatus: 200,
       statusText: 'OK',
-      data: respuestas
+      data: {
+        pedidos: respuestas,
+        orden: orden,
+      }
     }
     return respuesta;
   }
   ,
   searchUsers: (query: string) => {
     return ipcRenderer.invoke('db:searchUsers', ('%' + query + '%'));
-  }
+  },
+
+  imprimirRecibo: async (ordenId, pedidos) => {
+    let orden = await ipcRenderer.invoke('db:searchOrden', ordenId);
+    let configs = await ipcRenderer.invoke('db:searchConfigs');
+    let ordenFinal = orden.data;
+    ipcRenderer.send('imprimirRecibo', {
+      contenido: {ordenFinal, pedidos},
+      configs: configs,
+      configuracion: {
+        margins: { marginType: 'none' },
+        silent: false,
+        printBackground: false
+      }
+    })
+}
 
   // You can expose other APTs you need here.
   // ...

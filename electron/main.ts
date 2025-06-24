@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import {setupDbIpcHandlers} from './db/handlers.ts'
+import {setupPrintUtilities} from "./utilities/printUtilities.ts";
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -71,5 +72,6 @@ app.on('activate', () => {
 
 app.whenReady().then(() => {
   setupDbIpcHandlers();
+  setupPrintUtilities()
   createWindow();
 })

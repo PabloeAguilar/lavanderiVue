@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {ref, onMounted, h, computed} from "vue";
+import {ref, onMounted, h, computed, toRaw} from "vue";
 import {CustomResponse} from "../../electron/shared/CustomResponse.js";
 import {Cliente, Orden} from "../../electron/shared/Types.js";
 import {ElNotification} from "element-plus";
@@ -18,6 +18,23 @@ let pedidosList = ref<Pedido[]>([])
 onMounted(() => {
   loadLastOrders()
 })
+
+function mostrarMensaje(titulo:string, tipo:String, mensaje:string, duration:number) {
+  ElNotification({
+    title: titulo,
+    message: mensaje,
+    type:tipo,
+    duration:duration
+  })
+}
+
+function imprimirPedido() {
+  if (selectedOrden.value === null) {
+    mostrarMensaje("No se puede imprimir", "info", "Registre el pedido para imprimirlo", 5);
+    return;
+  }
+  window.electronApi.imprimirRecibo(selectedOrden.value.id, toRaw(pedidosList.value))
+}
 
 function loadLastOrders() {
   window.electronApi.dbLastOrders(5).then((resp: CustomResponse) => {
@@ -146,6 +163,9 @@ const querySearch = (querystring: string, cb: (arg: any) => void) => {
           <el-row >
             Cliente: {{ selectedOrden.nombre }}
           </el-row>
+          <el-row >
+            Comentarios: {{ selectedOrden.comentarios }}
+          </el-row>
         </el-row>
         <el-row style="margin-top: 10px; margin-bottom: 10px">
           <el-col :span="8">
@@ -188,6 +208,25 @@ const querySearch = (querystring: string, cb: (arg: any) => void) => {
           <el-col class="alineadoIzquierda" :span="6" :offset="8">
             <p>${{ calculateTotal }}</p>
           </el-col>
+        </el-row>
+        <el-row :gutter=20>
+          <el-col :span="8" :offset="2">
+            <p>Adelanto:</p>
+          </el-col>
+          <el-col class="alineadoIzquierda" :span="6" :offset="8">
+            <p>${{ (selectedOrden.adelanto ? selectedOrden.adelanto : 0) }}</p>
+          </el-col>
+        </el-row>
+        <el-row :gutter=20>
+          <el-col :span="8" :offset="2">
+            <p>Total:</p>
+          </el-col>
+          <el-col class="alineadoIzquierda" :span="6" :offset="8">
+            <p>${{ calculateTotal - (selectedOrden.adelanto ? selectedOrden.adelanto : 0) }}</p>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-button @click="imprimirPedido">Imprimir</el-button>
         </el-row>
       </el-main>
     </el-col>
