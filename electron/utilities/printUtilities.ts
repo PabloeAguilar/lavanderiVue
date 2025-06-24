@@ -42,7 +42,6 @@
 
     function generateReciboHtml(contenido, configs) {
         const infoPedido = generarInfoPedidos(contenido.pedidos, contenido.ordenFinal);
-        console.log(configs)
         const mapConfigs = configs.reduce((map, obj) => {
             map.set(obj.nombre, obj.valor);
             return map;
@@ -68,7 +67,7 @@
             <div class="detalle">${mapConfigs.get('rfc')}</div>
             <div class="detalle">${mapConfigs.get('direccion')}</div>
             <div class="detalle">${mapConfigs.get('horario')}</div>
-            <div class="detalle">${mapConfigs.get('telefono')}</div>
+            <div class="detalle">TELEFONO: ${mapConfigs.get('telefono')}</div>
             <div class="detalle">${mapConfigs.get('notas')}</div>
             
             
@@ -77,7 +76,6 @@
         </body>
         </html>
       `
-        console.log(infoPedido);
     }
 
     function generarInfoPedidos(pedidos: Pedido[], orden:Orden): string {

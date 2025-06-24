@@ -40,6 +40,22 @@ function  menuSeleccionado(nombreModulo:string) {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  font-size: large;
+}
+
+.el-collapse-item__title,
+p,
+.el-input-number .el-input__inner,
+.el-input .el-input__inner,
+.el-table__body,
+.el-button > span,
+thead,
+span {
+  font-size: large;
+}
+
+.el-autocomplete-suggestion li {
+  font-size: large !important;
 }
 
 .el-header {

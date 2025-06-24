@@ -33,7 +33,6 @@ contextBridge.exposeInMainWorld('electronApi', {
   getPedidosByOrder: (idOrden: number) => ipcRenderer.invoke('db:getPedidosByOrder', idOrden)
   ,
   insertOrden: async (nameUser:string, pedidos:[], comentarios?:String, adelanto:number, idUser?:number,) => {
-    console.log("orden inserción recibida");
     let fecha = new Date();
     let fechaString = new Intl.DateTimeFormat(["es-MX", "en-Us"], options).format(fecha);
     if (idUser === undefined || idUser === null) {

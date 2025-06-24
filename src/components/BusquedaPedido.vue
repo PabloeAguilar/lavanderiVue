@@ -40,8 +40,6 @@ function loadLastOrders() {
   window.electronApi.dbLastOrders(5).then((resp: CustomResponse) => {
     if (resp.estatus === 200) {
       ordenes.value = resp.data
-      console.log(ordenes)
-      console.log("resp", resp.data)
     }
   });
 }

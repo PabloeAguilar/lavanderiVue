@@ -30,14 +30,12 @@ export function setupDbIpcHandlers() {
 
     ipcMain.handle('db:searchOrden', (event, idOrden: number) => {
         const db = DB.getInstance();
-        console.log("Se va a buscar la orden con id: " + idOrden);
         let orden = db.prepare("SELECT o.*, c.nombre FROM ordenes o join clientes c on o.idCliente = c.id WHERE o.id = ?").get(idOrden);
         let respuesta:CustomResponse = {
             data: orden,
             estatus: 200,
             statusText: 'OK',
         }
-        console.log(respuesta);
         return respuesta;
     })
 

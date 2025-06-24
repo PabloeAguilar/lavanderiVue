@@ -86,8 +86,6 @@ async function registrarPedido() {
   }
   const result = await window.electronApi.insertOrden(nombreCliente.value, toRaw(listaPedido), comentariosGenerales.value, adelanto.value, idCliente);
   if (result.estatus == 200) {
-    mensaje.value = "registro guardado";
-    tipoMensaje.value = 'success';
     ordenId.value = result.data.orden.data
     mostrarMensaje("Guardado correcto", "success", "registro guardado", 0)
   } else {
@@ -212,7 +210,6 @@ function handleClearClient() {
             </el-main>
             <el-footer class="alineadoIzquierda">
               <el-button @click="agregarRopa()" type="primary">Agregar</el-button>
-              <el-button disabled type="info">Agregar aparte</el-button>
             </el-footer>
           </el-collapse-item>
           <el-collapse-item title="Planchados">
@@ -365,14 +362,14 @@ function handleClearClient() {
           </el-col>
         </el-row>
         <el-footer>
-          <el-row>
-            <el-button @click="registrarPedido">Registrar</el-button>
+          <el-row v-if="ordenId == 0" style="margin-bottom: 10px">
+            <el-button type="success" @click="registrarPedido">Registrar</el-button>
           </el-row>
           <el-row>
-            <el-button @click="restartForm">Limpiar</el-button>
+            <el-button plain type="danger" @click="restartForm">Limpiar</el-button>
           </el-row>
-          <el-row v-if="ordenId != 0">
-            <el-button @click="imprimirPedido">Imprimir</el-button>
+          <el-row v-if="ordenId != 0"  style="margin-top: 10px">
+            <el-button type="primary" plain @click="imprimirPedido">Imprimir</el-button>
           </el-row>
 
         </el-footer>
