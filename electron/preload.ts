@@ -1,5 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {CustomResponse} from "./shared/CustomResponse.ts";
+import {Cliente} from "./shared/Types.ts";
 
 const options = {
   year: "numeric",
@@ -64,6 +65,14 @@ contextBridge.exposeInMainWorld('electronApi', {
   ,
   searchUsers: (query: string) => {
     return ipcRenderer.invoke('db:searchUsers', ('%' + query + '%'));
+  },
+
+  loadClientes: () => {
+    return ipcRenderer.invoke('db:loadClientes');
+  },
+
+  updateClient: (cliente:Cliente) => {
+    return ipcRenderer.invoke('db:updateClient', cliente);
   },
 
   imprimirRecibo: async (ordenId, pedidos) => {

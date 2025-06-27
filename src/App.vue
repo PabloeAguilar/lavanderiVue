@@ -27,6 +27,7 @@ const listaModulos = [
   new Menu("Bienvenida", "Bienvenido", "/"),
   new Menu("Registro de pedido", "Registro de pedido", "/registroPedido"),
   new Menu("Búsqueda pedidos", "Búsqueda de pedidos", "/busqueda"),
+  new Menu("Clientes", "Lista de clientes", "/clientes"),
 ]
 function  menuSeleccionado(nombreModulo:string) {
   menuActual = nombreModulo;

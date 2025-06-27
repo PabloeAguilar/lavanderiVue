@@ -26,7 +26,8 @@ export class DB {
                 (
                     id            INTEGER PRIMARY KEY AUTOINCREMENT,
                     nombre        text not null unique,
-                    fechaRegistro text not null
+                    fechaRegistro text not null,
+                    telefono      text
                 );
             `;
             const ordenesQuery = `CREATE TABLE if not exists ordenes

@@ -3,6 +3,7 @@ import { DB } from './Database';
 import {SqliteError} from "better-sqlite3";
 import {CustomResponse} from "../shared/CustomResponse.ts";
 import {Pedido} from "../../src/classes/Pedido.ts";
+import {Cliente} from "../shared/Types.ts";
 
 export function setupDbIpcHandlers() {
     ipcMain.handle('db:query', (event, sql: string, params: any[]) => {
@@ -164,5 +165,37 @@ export function setupDbIpcHandlers() {
             }
             return respuesta;
         }
+    })
+
+    ipcMain.handle('db:loadClientes', (event) => {
+        const db = DB.getInstance();
+        try {
+            var users = db.prepare("SELECT * FROM clientes").all();
+        } catch (e:SqliteError) {
+            var detailedMessage = e.message;
+        }
+        let respuesta:CustomResponse = {
+            estatus: (users !== undefined ? 200 : 400),
+            statusText: (users !== undefined ? 'Ok' : "Error interno"),
+            detailedMessage: (users !== undefined ? undefined : detailedMessage),
+            data: (users !== undefined ? users : undefined)
+        }
+        return respuesta;
+    })
+
+    ipcMain.handle('db:updateClient', (event, cliente: Cliente) => {
+        const db = DB.getInstance();
+        try {
+            db.prepare("UPDATE Clientes SET nombre = ?, telefono = ? where id = ?").run(cliente.nombre, cliente.telefono, cliente.id);
+            var ok = true;
+        } catch (e: SqliteError) {
+            var detailedMessage = e.message;
+        }
+        let respuesta: CustomResponse = {
+            estatus: ok ? 200 : 400,
+            detailedMessage: ok ? undefined : detailedMessage,
+            statusText: ok ? 'ok' : 'Error interno',
+        }
+        return respuesta;
     })
 }
