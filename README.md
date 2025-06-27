@@ -32,21 +32,10 @@ Sin necesidad de conexión a internet.
 
 Clonar el repositorio:
 
-sh
 git clone https://github.com/tu-usuario/lavanderiVue.git
 cd lavanderiVue
-Instalar dependencias:
-
-sh
 npm install
-Ejecutar en desarrollo:
-
-sh
 npm run dev
-Compilar para producción:
-
-sh
-npm run build
 
 ## Uso
 
