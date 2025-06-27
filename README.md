@@ -1,16 +1,12 @@
 # lavanderiVue
-https://img.shields.io/badge/Vue-3-green
-https://img.shields.io/badge/Electron-Latest-blue
-https://img.shields.io/badge/SQLite-3-lightgrey
 
 LavanderiVue es una aplicación de escritorio desarrollada con Vue 3, Electron y SQLite para gestionar pedidos y clientes de una lavandería. Permite registrar órdenes de ropa (lavado, planchado o piezas individuales) y mantener un control básico de clientes con sus datos de contacto.
 
-Características
+## Características
+
 ✅ Gestión de Pedidos
 
 Registro de órdenes con tipo de servicio (lavado, planchado, piezas).
-
-Estado de los pedidos (pendiente, en proceso, completado).
 
 Fechas de entrega y precios.
 
@@ -32,7 +28,8 @@ Usa SQLite para almacenar toda la información de forma persistente.
 
 Sin necesidad de conexión a internet.
 
-Instalación
+## Instalación
+
 Clonar el repositorio:
 
 sh
@@ -50,16 +47,17 @@ Compilar para producción:
 
 sh
 npm run build
-Uso
-Al iniciar la aplicación, podrás:
 
-Añadir nuevos clientes desde la pestaña Clientes.
+## Uso
+
+Al iniciar la aplicación, podrás:
 
 Crear pedidos en Órdenes, asignándolos a un cliente.
 
 Marcar pedidos como completados una vez finalizados.
 
-Capturas de Pantalla
+## Capturas de Pantalla
+
 ![image](https://github.com/user-attachments/assets/58200688-a915-48ae-af8b-bab9ce52834d)
 
 
@@ -70,4 +68,3 @@ Licencia
 MIT
 
 ✨ Desarrollado con Vue, Electron y SQLite ✨
-Contacto: pabloe130401@hotmail.com
