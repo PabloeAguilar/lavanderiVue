@@ -21,8 +21,9 @@
 
 import MenuLateral from './components/MenuLateral.vue';
 import {Menu} from './classes/Menu.ts'
+import {ref} from "vue";
 
-let menuActual = '';
+let menuActual = ref('Bienvenida');
 const listaModulos = [
   new Menu("Bienvenida", "Bienvenido", "/"),
   new Menu("Registro de pedido", "Registro de pedido", "/registroPedido"),
@@ -30,7 +31,7 @@ const listaModulos = [
   new Menu("Clientes", "Lista de clientes", "/clientes"),
 ]
 function  menuSeleccionado(nombreModulo:string) {
-  menuActual = nombreModulo;
+  menuActual.value = nombreModulo;
 }
 </script>
 

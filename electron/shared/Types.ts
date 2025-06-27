@@ -11,4 +11,5 @@ export interface Orden {
     nombre: string,
     comentarios?: string,
     adelanto?: number
+    fechaEntrega?: string
 }

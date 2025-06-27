@@ -75,6 +75,22 @@ contextBridge.exposeInMainWorld('electronApi', {
     return ipcRenderer.invoke('db:updateClient', cliente);
   },
 
+  marcarOrdenComoEntregado: async (idOrden: number) => {
+    let fecha = new Date();
+    let fechaString = new Intl.DateTimeFormat(["es-MX", "en-Us"], options).format(fecha);
+    let actualizacionCorrecta:boolean = await ipcRenderer.invoke('db:updateFechaEntregaOrden', idOrden, fechaString);
+    if (actualizacionCorrecta) {
+      return ipcRenderer.invoke('db:searchOrden', idOrden);
+    } else {
+      let response:CustomResponse = {
+        estatus: 400,
+        statusText: 'error interno',
+      }
+      return response;
+    }
+
+  },
+
   imprimirRecibo: async (ordenId, pedidos) => {
     let orden = await ipcRenderer.invoke('db:searchOrden', ordenId);
     let configs = await ipcRenderer.invoke('db:searchConfigs');

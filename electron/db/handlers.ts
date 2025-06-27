@@ -198,4 +198,16 @@ export function setupDbIpcHandlers() {
         }
         return respuesta;
     })
+
+    ipcMain.handle('db:updateFechaEntregaOrden', (event, idOrden:number, fecha:string) => {
+        const db = DB.getInstance();
+        try {
+            db.prepare("UPDATE ordenes SET fechaEntrega = ? where id = ?").run(fecha, idOrden);
+            return true;
+        } catch (e:SqliteError) {
+            console.log(e.message)
+            return false;
+        }
+
+    })
 }

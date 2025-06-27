@@ -114,6 +114,24 @@ const querySearch = (querystring: string, cb: (arg: any) => void) => {
   })
 }
 
+async function marcarComoEntregado() {
+  let updatedOrder:CustomResponse = await window.electronApi.marcarOrdenComoEntregado(selectedOrden.value?.id);
+  if (updatedOrder.estatus === 200) {
+    // Encontrar y actualizar el cliente en el array
+    const index = ordenes.value.findIndex(
+        (o) => o.id === selectedOrden.value?.id
+    )
+    if (index !== -1) {
+      ordenes.value[index].fechaEntrega =  updatedOrder.data.fechaEntrega
+
+    }
+    selectedOrden.value.fechaEntrega = updatedOrder.data.fechaEntrega;
+  } else {
+    notifySelectUser("Ocurrió un error al actualizar el pedido")
+  }
+
+}
+
 </script>
 
 <template>
@@ -156,10 +174,13 @@ const querySearch = (querystring: string, cb: (arg: any) => void) => {
             Pedido número {{ selectedOrden.id }}
           </el-row>
           <el-row >
-            Fecha de pedido: {{ selectedOrden.fechaRegistro }}
+            Cliente: {{ selectedOrden.nombre }}
           </el-row>
           <el-row >
-            Cliente: {{ selectedOrden.nombre }}
+            Fecha de pedido: {{ selectedOrden.fechaRegistro }}
+          </el-row>
+          <el-row v-if="selectedOrden.fechaEntrega">
+            Fecha de entrega: {{ selectedOrden.fechaEntrega }}
           </el-row>
           <el-row >
             Comentarios: {{ selectedOrden.comentarios }}
@@ -224,7 +245,10 @@ const querySearch = (querystring: string, cb: (arg: any) => void) => {
           </el-col>
         </el-row>
         <el-row>
-          <el-button @click="imprimirPedido">Imprimir</el-button>
+          <el-button type="info" @click="imprimirPedido">Imprimir</el-button>
+        </el-row>
+        <el-row v-if="! selectedOrden.fechaEntrega" style="margin-top: 1rem">
+          <el-button type="warning" @click="marcarComoEntregado">Entregar</el-button>
         </el-row>
       </el-main>
     </el-col>

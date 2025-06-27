@@ -62,6 +62,7 @@
             <div class="titulo">LAVANDERIA EL JARDIN</div>
             <div class="titulo">NOTA N. ${contenido.ordenFinal.id}</div>
             <div class="detalle">FECHA: ${contenido.ordenFinal.fechaRegistro}</div>
+            ${fechaEntrega(contenido.ordenFinal)}
             <div class="detalle">CLIENTE: ${contenido.ordenFinal.nombre}</div>
             <div class="detalle">${mapConfigs.get('regimen')}</div>
             <div class="detalle">${mapConfigs.get('rfc')}</div>
@@ -141,4 +142,12 @@
     `;
 
         return html;
+    }
+
+    function fechaEntrega(orden: Orden) {
+        let html = `<div class="detalle">ENTREGADO EL: ${orden.fechaEntrega}</div>`;
+        if (orden.fechaEntrega) {
+            return html;
+        }
+        return '';
     }
