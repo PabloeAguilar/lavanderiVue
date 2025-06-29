@@ -13,6 +13,8 @@
   "dependencies": {
     "better-sqlite3": "^11.10.0",
     "element-plus": "^2.9.10",
+    "escpos": "^2.4.11",
+    "escpos-usb": "^3.0.0-alpha.4",
     "vue": "^3.4.21",
     "vue-router": "^4.5.1"
   },

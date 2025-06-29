@@ -33,7 +33,7 @@ function imprimirPedido() {
     mostrarMensaje("No se puede imprimir", "info", "Registre el pedido para imprimirlo", 5);
     return;
   }
-  window.electronApi.imprimirRecibo(selectedOrden.value.id, toRaw(pedidosList.value))
+  window.printApi.imprimirRecibo(selectedOrden.value.id, toRaw(pedidosList.value))
 }
 
 function loadLastOrders() {

@@ -1,97 +1,85 @@
-    import {BrowserWindow, ipcMain, Menu} from 'electron';
-    import {Pedido} from "../../src/classes/Pedido.ts";
-    import {Orden} from "../shared/Types.ts";
+import {ipcMain} from 'electron';
+import {createRequire} from 'node:module';
 
-    export function setupPrintUtilities() {
-        ipcMain.on("imprimirRecibo", (event, data) => {
-            let win = new BrowserWindow({
-                show: true,
-                webPreferences: {
-                    nodeIntegration: true,
-                }
-            })
-            const template = [
-                {
-                    label: 'Archivo',
-                    submenu: [
-                        {
-                            label: 'Imprimir',
-                            accelerator: 'CmdOrCtrl+P',
-                            click: () =>
-                            { win.webContents.print({}, success => {
-                                if (win && !win.isDestroyed()) {
-                                    win.close();
-                                }
-                            }) }
-                        }
-                    ]
-                }
-            ]
-
-            const menu = Menu.buildFromTemplate(template)
-            Menu.setApplicationMenu(menu)
-
-            const html =  generateReciboHtml(data.contenido, data.configs);
-            win.loadURL(`data:text/html,${encodeURIComponent(html)}`);
+const require = createRequire(import.meta.url);
+const escpos = require('escpos');
+const escpos_usb = require('escpos-usb');
 
 
-        })
-    }
+escpos.USB = escpos_usb;
+
+export function setupPrintUtilities() {
+    ipcMain.handle("imprimirRecibo", (event, data) => {
+        imprimirReciboEscPos(data.contenido.pedidos, data.contenido.ordenFinal, data.configs);
+    });
+}
 
 
+export function imprimirReciboEscPos(pedidos, ordenInfo, configs) {
+    // Buscar la impresora USB
+    console.log("Antes de buscar la impresora")
+    const device = new escpos.USB();
+    const map = new Map();
+    configs.forEach(obj => {
+        map.set(obj.nombre, obj.valor);
+    });
 
-    function generateReciboHtml(contenido, configs) {
-        const infoPedido = generarInfoPedidos(contenido.pedidos, contenido.ordenFinal);
-        const mapConfigs = configs.reduce((map, obj) => {
-            map.set(obj.nombre, obj.valor);
-            return map;
-        }, new Map<string, any>());
-        return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: 'Courier New', monospace; width: 58mm; }
-            .recibo { width: 100%; }
-            .titulo { text-align: center; font-weight: bold; }
-            .detalle { font-size: x-small; }
-          </style>
-        </head>
-        <body>
-          <div class="recibo">
-            <div class="titulo">LAVANDERIA EL JARDIN</div>
-            <div class="titulo">NOTA N. ${contenido.ordenFinal.id}</div>
-            <div class="detalle">FECHA: ${contenido.ordenFinal.fechaRegistro}</div>
-            ${fechaEntrega(contenido.ordenFinal)}
-            <div class="detalle">CLIENTE: ${contenido.ordenFinal.nombre}</div>
-            <div class="detalle">${mapConfigs.get('regimen')}</div>
-            <div class="detalle">${mapConfigs.get('rfc')}</div>
-            <div class="detalle">${mapConfigs.get('direccion')}</div>
-            <div class="detalle">${mapConfigs.get('horario')}</div>
-            <div class="detalle">TELEFONO: ${mapConfigs.get('telefono')}</div>
-            <div class="detalle">${mapConfigs.get('notas')}</div>
-            
-            
-            ${infoPedido}
-          </div>
-        </body>
-        </html>
-      `
-    }
+    // Configurar la impresora
+    const printer = new escpos.Printer(device, {
+        encoding: 'GB18030',
+        width: 30 // Ancho de la impresora en caracteres (ajustar según modelo)
+    });
 
-    function generarInfoPedidos(pedidos: Pedido[], orden:Orden): string {
-        let html = `
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: x-small">
-            <thead>
-                <tr>
-                    <th style="text-align: left; border-bottom: 1px dashed #000;">DESCRIPCION</th>
-                    <th style="text-align: right; border-bottom: 1px dashed #000;">PRECIO <br> UNITARIO</th>
-                    <th style="text-align: right; border-bottom: 1px dashed #000;">SUBTOTAL</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    device.open(function (error) {
+        if (error) {
+            console.error('Error al conectar con la impresora:', error);
+            return;
+        }
 
+        console.log("Alcanza config inicial")
+        // Configuración inicial
+        printer
+            .font('a')
+            .align('ct')
+            .style('bu')
+            .size(1, 1)
+            .text('LAVANDERIA EL JARDIN')
+            .align('lt')
+            .text(`${map.get('direccion')}`)
+            .text(`${map.get('rfc')}`)
+            .size(0, 0)
+            .text(`${map.get('regimen')}`)
+            .size(1, 1)
+            .text(`TELEFONO: ${map.get('telefono')}`)
+            .text(`${map.get('horario')}`)
+            .size(0, 0)
+            .style('b')
+            .text('----------------------------')
+            .align('lt')
+            .text(`FECHA: ${ordenInfo.fechaRegistro}`)
+            .text(`CLIENTE: ${ordenInfo.nombre}`)
+
+
+        if (ordenInfo.fechaEntrega !== undefined && ordenInfo.fechaEntrega !== null) {
+            printer
+                .align('lt')
+                .text(`ENTREGADO: ${ordenInfo.fechaEntrega}`)
+        }
+        printer
+            .text('----------------------------')
+            .feed(1);
+
+        // Encabezados de columnas
+        printer
+            .style('b')
+            .text(
+                leftAlign('DESCRIPCION', 22) +
+                centerAlign('UNITARIO', 10) +
+                rightAlign('SUBTOTAL', 10)
+            )
+            .text('----------------------------')
+            .style('');
+        // Items del pedido
         pedidos.forEach(pedido => {
             let descripcion = '';
 
@@ -101,53 +89,62 @@
                 descripcion = `${pedido.cantidad} kg`;
             } else if (pedido.tipo === 'planchado') {
                 descripcion = isNaN(pedido.cantidad) || pedido.cantidad == 0
-                    ? (pedido.descripcion ? pedido.descripcion : "SERVICIO PLANCHADO")
+                    ? pedido.descripcion
                     : `${pedido.cantidad} piezas`;
             }
 
-            html += `
-            <tr>
-                <td style="text-align: left; padding: 2px 0;">${pedido.tipo}: ${descripcion}</td>
-                <td style="text-align: right; padding: 2px 0;">$${pedido.precio} </td>
-                <td style="text-align: right; padding: 2px 0;">$${pedido.subtotal.toFixed(2)}</td>
-            </tr>
-        `;
+            printer.text(
+                leftAlign(`${pedido.tipo}: ${descripcion}`, 22) +
+                rightAlign(`$${pedido.precioUnitario?.toFixed(2) || '0.00'}`, 10) +
+                rightAlign(`$${pedido.subtotal.toFixed(2)}`, 10)
+            );
         });
 
-        // Total general
+        // Totales
         const total = pedidos.reduce((sum, pedido) => sum + pedido.subtotal, 0);
-        const adelanto = orden.adelanto || 0; // Asume que existe en el objeto
-        const restante = total - adelanto;
+        const adelanto = ordenInfo.adelanto || 0;
+        const restante = Math.max(0, total - adelanto);
 
-        html += `
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td />
-                    <td style="text-align: right; border-top: 1px dashed #000; padding-top: 5px; font-weight: bold;">TOTAL:</td>
-                    <td style="text-align: right; border-top: 1px dashed #000; padding-top: 5px; font-weight: bold;">$${total.toFixed(2)}</td>
-                </tr>
-                <tr>
-                <td />
-                    <td style="text-align: right; padding: 2px 0;">ADELANTO:</td>
-                    <td style="text-align: right; padding: 2px 0;">$${adelanto.toFixed(2)}</td>
-                </tr>
-                <tr>
-                <td />
-                    <td style="text-align: right; border-bottom: 1px dashed #000; padding-bottom: 5px; font-weight: bold;">RESTANTE:</td>
-                    <td style="text-align: right; border-bottom: 1px dashed #000; padding-bottom: 5px; font-weight: bold;">$${restante.toFixed(2)}</td>
-                </tr>
-            </tfoot>
-        </table>
-    `;
+        printer
+            .text('----------------------------')
+            .feed(1)
+            .style('b')
+            .text(
+                leftAlign('TOTAL:', 32) +
+                rightAlign(`$${total.toFixed(2)}`, 10)
+            )
+            .style('')
+            .text(
+                leftAlign('ADELANTO:', 32) +
+                rightAlign(`$${adelanto.toFixed(2)}`, 10)
+            )
+            .style('b')
+            .text(
+                leftAlign('RESTANTE:', 32) +
+                rightAlign(`$${restante.toFixed(2)}`, 10)
+            )
+            .text('============================')
+            .feed(2)
+            .text('Gracias por su preferencia!')
+            .text(`${map.get('notas')}`)
+            .feed(1)
+            .cut()
+            .close();
+    });
+}
 
-        return html;
-    }
+// Funciones auxiliares para alineación
+function leftAlign(text: string, width: number): string {
+    return text.padEnd(width).substring(0, width);
+}
 
-    function fechaEntrega(orden: Orden) {
-        let html = `<div class="detalle">ENTREGADO EL: ${orden.fechaEntrega}</div>`;
-        if (orden.fechaEntrega) {
-            return html;
-        }
-        return '';
-    }
+function centerAlign(text: string, width: number): string {
+    const pad = width - text.length;
+    const padLeft = Math.floor(pad / 2);
+    return ' '.repeat(padLeft) + text + ' '.repeat(pad - padLeft);
+}
+
+function rightAlign(text: string, width: number): string {
+    return text.padStart(width).substring(0, width);
+}
+

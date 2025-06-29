@@ -33,8 +33,14 @@ Sin necesidad de conexión a internet.
 Clonar el repositorio:
 
 git clone https://github.com/tu-usuario/lavanderiVue.git
+
 cd lavanderiVue
+
 npm install
+
+### !IMPORTANTE!
+Comentar la función usb.on en node-modules/escpos-usb/index.js línea 52
+
 npm run dev
 
 ## Uso

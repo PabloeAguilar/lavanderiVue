@@ -91,11 +91,19 @@ contextBridge.exposeInMainWorld('electronApi', {
 
   },
 
+
+
+  // You can expose other APTs you need here.
+  // ...
+})
+
+contextBridge.exposeInMainWorld("printApi", {
   imprimirRecibo: async (ordenId, pedidos) => {
     let orden = await ipcRenderer.invoke('db:searchOrden', ordenId);
     let configs = await ipcRenderer.invoke('db:searchConfigs');
     let ordenFinal = orden.data;
-    ipcRenderer.send('imprimirRecibo', {
+    console.log("Imprimir enviado")
+    ipcRenderer.invoke('imprimirRecibo', {
       contenido: {ordenFinal, pedidos},
       configs: configs,
       configuracion: {
@@ -104,9 +112,6 @@ contextBridge.exposeInMainWorld('electronApi', {
         printBackground: false
       }
     })
-}
-
-  // You can expose other APTs you need here.
-  // ...
+  }
 })
 
