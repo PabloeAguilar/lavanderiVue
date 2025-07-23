@@ -103,7 +103,7 @@ contextBridge.exposeInMainWorld("printApi", {
     let configs = await ipcRenderer.invoke('db:searchConfigs');
     let ordenFinal = orden.data;
     console.log("Imprimir enviado")
-    ipcRenderer.invoke('imprimirRecibo', {
+    ipcRenderer.invoke('imprimirReciboMediaHoja', {
       contenido: {ordenFinal, pedidos},
       configs: configs,
       configuracion: {
