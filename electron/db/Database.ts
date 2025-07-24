@@ -1,17 +1,16 @@
-import path from 'path';
-import {app} from "electron";
-import { createRequire } from 'module';
+import path from "path";
+import { app } from "electron";
+import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const Database = require('better-sqlite3');
-
+const Database = require("better-sqlite3");
 
 export class DB {
-    private static instance:typeof Database;
+    private static instance: typeof Database;
 
     static getInstance() {
         if (!DB.instance) {
-            const userDataPath = app.getPath('userData');
-            const dbPath = path.join(userDataPath, 'my-database.sqlite');
+            const userDataPath = app.getPath("userData");
+            const dbPath = path.join(userDataPath, "my-database.sqlite");
             DB.instance = new Database(dbPath);
             DB.initializeDatabase();
         }
@@ -40,8 +39,8 @@ export class DB {
                                       adelanto      integer,
                                       foreign key (idCliente) references clientes (id)
                                   )
-                                  ;`
-            const pedidosQuery =  `CREATE TABLE IF NOT EXISTS pedidos
+                                  ;`;
+            const pedidosQuery = `CREATE TABLE IF NOT EXISTS pedidos
                                    (
                                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
                                        idOrden       INTEGER      not null,
@@ -52,13 +51,13 @@ export class DB {
                                        subtotal      integer      NOT NULL,
                                        fechaRegistro text         NOT NULL,
                                        FOREIGN KEY (idOrden) references ordenes (id)
-                                   );`
+                                   );`;
             const preciosQuery = ` CREATE TABLE IF NOT EXISTS precios
                                    (
                                        id      INTEGER PRIMARY KEY AUTOINCREMENT,
                                        nombre  varchar(255) NOT NULL,
                                        preccio INTEGER      NOT NULL
-                                   );`
+                                   );`;
 
             const configsQuery = `CREATE TABLE IF NOT EXISTS configuraciones
                                   (
@@ -69,19 +68,27 @@ export class DB {
                                       constraint configuraciones_pk_2
                                       unique,
                                       valor  TEXT
-                                  );`
+                                  );`;
+
+            const suggestPiecesQuery = `create table if not exists piezas_sugerencias
+                                        (
+                                            id                integer not null
+                                                constraint piezas_sugerencias_pk
+                                                    primary key autoincrement,
+                                            clave             text    not null,
+                                            nombre            text    not null,
+                                            precio_individual integer not null
+                                        );`;
 
 
-
+            DB.instance.prepare(suggestPiecesQuery).run();
             DB.instance.prepare(clientesQuery).run();
             DB.instance.prepare(ordenesQuery).run();
             DB.instance.prepare(pedidosQuery).run();
             DB.instance.prepare(preciosQuery).run();
             DB.instance.prepare(configsQuery).run();
-
-
         } catch (error) {
-            console.error('Failed to initialize database:', error);
+            console.error("Failed to initialize database:", error);
             // Handle error appropriately, maybe quit the app or show an error dialog
             app.quit();
         }

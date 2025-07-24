@@ -1,6 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import {CustomResponse} from "./shared/CustomResponse.ts";
-import {Cliente} from "./shared/Types.ts";
+import {Cliente, SugerenciaPieza} from "./shared/Types.ts";
 
 const options = {
   year: "numeric",
@@ -89,6 +89,14 @@ contextBridge.exposeInMainWorld('electronApi', {
       return response;
     }
 
+  },
+
+  obtenerListaSugerenciasPiezas: () => {
+    return ipcRenderer.invoke('db:loadSugerenciasPiezas');
+  },
+
+  actualizarSugerenciaPieza: (sugerencia: SugerenciaPieza) => {
+    return ipcRenderer.invoke('db:updateSugerenciaPieza', sugerencia);
   },
 
 

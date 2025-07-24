@@ -13,3 +13,10 @@ export interface Orden {
     adelanto?: number
     fechaEntrega?: string
 }
+
+export interface SugerenciaPieza {
+    id: number,
+    clave: string,
+    nombre: string,
+    precio_individual: number
+}

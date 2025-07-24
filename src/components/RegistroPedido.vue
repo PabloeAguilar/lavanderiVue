@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import {Delete} from '@element-plus/icons-vue'
-import {reactive, ref, toRaw, computed} from "vue";
-import {Pedido} from "../classes/Pedido.js";
-import {PiezasIndividuales} from "../classes/PiezasIndividuales.ts";
-import {CustomResponse} from "../../electron/shared/CustomResponse.ts";
-import {Cliente} from "../../electron/shared/Types.ts";
-import {ElNotification} from "element-plus";
+import { Delete } from '@element-plus/icons-vue'
+import { reactive, ref, toRaw, computed, onMounted } from "vue";
+import { Pedido } from "../classes/Pedido.js";
+import { PiezasIndividuales } from "../classes/PiezasIndividuales.ts";
+import { CustomResponse } from "../../electron/shared/CustomResponse.ts";
+import { Cliente, SugerenciaPieza } from "../../electron/shared/Types.ts";
+import { ElNotification } from "element-plus";
 
 let nombreCliente = ref('');
 let idCliente: number | null = null;
@@ -28,7 +28,7 @@ const restante = computed(() => {
   return totalPedidos.value - adelanto.value;
 })
 
-function onInputAdelanto(){
+function onInputAdelanto() {
   if (adelanto.value > totalPedidos.value) {
     adelanto.value = totalPedidos.value;
   }
@@ -65,7 +65,7 @@ function agregarPiezaIndividual() {
   piezaIndividual.precio = 70
 }
 
-function comprobacionPedido() :string | undefined {
+function comprobacionPedido(): string | undefined {
   console.log(nombreCliente.value.trim())
   if (nombreCliente.value.trim().length < 1) {
     return 'Es necesario un nombre del cliente'
@@ -77,8 +77,8 @@ function comprobacionPedido() :string | undefined {
 }
 
 async function registrarPedido() {
-  let observacionesPedido:string|undefined = comprobacionPedido();
-  if (observacionesPedido !== undefined ) {
+  let observacionesPedido: string | undefined = comprobacionPedido();
+  if (observacionesPedido !== undefined) {
     mensaje.value = observacionesPedido;
     tipoMensaje.value = 'error';
     reiniciarMensaje();
@@ -96,12 +96,12 @@ async function registrarPedido() {
 
 }
 
-function mostrarMensaje(titulo:string, tipo:String, mensaje:string, duration:number) {
+function mostrarMensaje(titulo: string, tipo: String, mensaje: string, duration: number) {
   ElNotification({
     title: titulo,
     message: mensaje,
-    type:tipo,
-    duration:duration
+    type: tipo,
+    duration: duration
   })
 }
 
@@ -128,7 +128,7 @@ function onCloseMensaje() {
 const querySearch = (querystring: string, cb: (arg: any) => void) => {
   const results = window.electronApi.searchUsers(querystring);
   results.then((resp: CustomResponse) => {
-    const suggestions = resp.data.map((client:Cliente) => {
+    const suggestions = resp.data.map((client: Cliente) => {
       return {
         value: client.nombre,
         id: client.id,
@@ -154,6 +154,59 @@ function restartForm() {
 function handleClearClient() {
   idCliente = null;
 }
+
+onMounted(() => {
+  fetchPiezas();
+});
+
+const piezas = ref<SugerenciaPieza[]>([]);
+
+function fetchPiezas() {
+  window.electronApi.obtenerListaSugerenciasPiezas().then((response: CustomResponse) => {
+    if (response.estatus === 200) {
+      piezas.value = response.data || [];
+    } else {
+      ElNotification({
+        title: 'Error',
+        message: 'Ocurrió un error al cargar las sugerencias de piezas'
+      });
+    }
+  });
+}
+
+const querySearchPieza = (queryString: string, cb: any) => {
+  const results = queryString
+    ? piezas.value.filter(createFilterPieza(queryString))
+    : piezas.value
+  // call callback function to return suggestions
+  cb(mapPiezaToSuggestion(results))
+}
+
+function mapPiezaToSuggestion(piezas: SugerenciaPieza[]) {
+  return piezas.map(pieza => ({
+    value: pieza.nombre,
+    precio_individual: pieza.precio_individual,
+    id: pieza.id,
+    nombre: pieza.nombre
+  }));
+}
+
+const createFilterPieza = (queryString: string) => {
+  return (pieza: SugerenciaPieza) => {
+    return (
+      pieza.nombre.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+    )
+  }
+}
+
+const handleSelectPieza = (item: SugerenciaPieza) => {
+  piezaIndividual.descripcion = item.value;
+  piezaIndividual.precio = item.precio_individual;
+  piezaIndividual.piezas = 1; // Resetear cantidad a 1 al seleccionar
+
+}
+
+
 </script>
 
 <template>
@@ -176,12 +229,8 @@ function handleClearClient() {
         </el-row>
         <el-row>
           <el-col>
-            <el-autocomplete
-                :fetch-suggestions="querySearch"
-                @select="handleSelect"
-                clearable
-                @clear="handleClearClient"
-                placeholder="Nombre del cliente" v-model="nombreCliente"/>
+            <el-autocomplete :fetch-suggestions="querySearch" @select="handleSelect" clearable
+              @clear="handleClearClient" placeholder="Nombre del cliente" v-model="nombreCliente" />
           </el-col>
         </el-row>
         <el-collapse accordion>
@@ -194,7 +243,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number min=1 max=9999 placeholder="precio" v-model="precioRopa" step="1"/>
+                  <el-input-number min=1 max=9999 placeholder="precio" v-model="precioRopa" step="1" />
                 </el-col>
               </el-row>
               <el-row>
@@ -221,7 +270,8 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number @focus="$event.target.select()" min=1 max=9999 placeholder="precio" v-model="precioPlanchado" step=1 />
+                  <el-input-number @focus="$event.target.select()" min=1 max=9999 placeholder="precio"
+                    v-model="precioPlanchado" step=1 />
                 </el-col>
               </el-row>
               <el-row>
@@ -231,7 +281,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input placeholder="Que piezas" v-model="planchados.descripcion"/>
+                  <el-input placeholder="Que piezas" v-model="planchados.descripcion" />
                 </el-col>
               </el-row>
               <el-row>
@@ -241,7 +291,8 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number @focus="$event.target.select()" min=0 max=9999 placeholder="Cantidad" v-model="planchados.piezas" step=1 />
+                  <el-input-number @focus="$event.target.select()" min=0 max=9999 placeholder="Cantidad"
+                    v-model="planchados.piezas" step=1 />
                 </el-col>
               </el-row>
             </el-main>
@@ -258,7 +309,7 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input minlength=3 placeholder="Almohada, edredon, etc" v-model="piezaIndividual.descripcion"/>
+                  <el-autocomplete v-model="piezaIndividual.descripcion" placeholder="Almohada, edredon, etc" :fetch-suggestions="querySearchPieza" @select="handleSelectPieza" clearable />
                 </el-col>
               </el-row>
               <el-row>
@@ -268,7 +319,8 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number @focus="$event.target.select()" min=1 placeholder="10, 9" v-model="piezaIndividual.piezas"/>
+                  <el-input-number @focus="$event.target.select()" min=1 placeholder="10, 9"
+                    v-model="piezaIndividual.piezas" />
                 </el-col>
               </el-row>
               <el-row>
@@ -278,7 +330,8 @@ function handleClearClient() {
               </el-row>
               <el-row>
                 <el-col>
-                  <el-input-number @focus="$event.target.select()" placeholder="70" min=20 step=5 v-model="piezaIndividual.precio">
+                  <el-input-number @focus="$event.target.select()" placeholder="70" min=20 step=5
+                    v-model="piezaIndividual.precio">
                     <template #prefix>
                       <span>$</span>
                     </template>
@@ -291,7 +344,7 @@ function handleClearClient() {
             </el-footer>
           </el-collapse-item>
         </el-collapse>
-        <el-input placeholder="Comentarios adicionales" v-model="comentariosGenerales"/>
+        <el-input placeholder="Comentarios adicionales" v-model="comentariosGenerales" />
       </el-col>
       <el-col :span=12>
         <el-header>
@@ -313,7 +366,7 @@ function handleClearClient() {
         </el-row>
         <el-row v-for="(item, index) in listaPedido" :key="index" gutter=20>
           <el-col :span="2">
-            <el-button circle @click="removerSubpedido(index)" type="danger" :icon="Delete"/>
+            <el-button circle @click="removerSubpedido(index)" type="danger" :icon="Delete" />
           </el-col>
           <el-col :span="8">
             <p>{{ item.tipo }}</p>
@@ -350,7 +403,7 @@ function handleClearClient() {
             <p>Adelanto:</p>
           </el-col>
           <el-col class="alineadoIzquierda" :span="12" :offset="2">
-            <el-input-number v-model="adelanto" min="0" @change="onInputAdelanto"  />
+            <el-input-number v-model="adelanto" min="0" @change="onInputAdelanto" />
           </el-col>
         </el-row>
         <el-row :gutter=20>
@@ -368,7 +421,7 @@ function handleClearClient() {
           <el-row>
             <el-button plain type="danger" @click="restartForm">Limpiar</el-button>
           </el-row>
-          <el-row v-if="ordenId != 0"  style="margin-top: 10px">
+          <el-row v-if="ordenId != 0" style="margin-top: 10px">
             <el-button type="primary" plain @click="imprimirPedido">Imprimir</el-button>
           </el-row>
 

@@ -3,7 +3,7 @@ import { DB } from './Database';
 import {SqliteError} from "better-sqlite3";
 import {CustomResponse} from "../shared/CustomResponse.ts";
 import {Pedido} from "../../src/classes/Pedido.ts";
-import {Cliente} from "../shared/Types.ts";
+import {Cliente, SugerenciaPieza} from "../shared/Types.ts";
 
 export function setupDbIpcHandlers() {
     ipcMain.handle('db:query', (event, sql: string, params: any[]) => {
@@ -209,5 +209,79 @@ export function setupDbIpcHandlers() {
             return false;
         }
 
+    })
+
+    ipcMain.handle('db:loadSugerenciasPiezas', (event) => {
+        const db = DB.getInstance();
+        try {
+            var piezas = db.prepare("SELECT * FROM piezas_sugerencias").all();
+            if (piezas.length == 0) {
+                // Insertar piezas sugeridas por defecto
+                const defaultPieces = `
+                    INSERT INTO piezas_sugerencias (clave, nombre, precio_individual) VALUES 
+                    ('tenis', 'Par de tenis', 20),
+                    ('cobertor', 'Cobertor', 60),
+                    ('sobrecama', 'Sobrecama', 50),
+                    ('edredon', 'Edredon', 70),
+                    ('chamarra', 'Chamarra', 25),
+                    ('almohada', 'Almohada', 25);
+                `;
+                db.prepare(defaultPieces).run();
+                piezas = db.prepare("SELECT * FROM piezas_sugerencias").all();
+            }
+        } catch (e:SqliteError) {
+            var detailedMessage = e.message;
+        }
+        let respuesta:CustomResponse = {
+            estatus: (piezas !== undefined ? 200 : 400),
+            statusText: (piezas !== undefined ? 'Ok' : "Error interno"),
+            detailedMessage: (piezas !== undefined ? undefined : detailedMessage),
+            data: (piezas !== undefined ? piezas : undefined)
+        }
+        return respuesta;
+    })
+
+    ipcMain.handle('db:insertSugerenciaPieza', (event, pieza: { clave: string, nombre: string, precio_individual: number }) => {
+        const db = DB.getInstance();
+        try {
+            let respuesta:CustomResponse = {
+                data: db.prepare("INSERT INTO piezas_sugerencias (clave, nombre, precio_individual) VALUES (?, ?, ?)")
+                    .run(pieza.clave, pieza.nombre, pieza.precio_individual).lastInsertRowid,
+                estatus: 200,
+                statusText: "Todo correcto",
+            }
+            return respuesta;
+
+        } catch (e:SqliteError) {
+            let respuesta:CustomResponse = {
+                estatus: 400,
+                statusText: "Error interno",
+                detailedMessage: e.message,
+            }
+            return respuesta;
+        }
+    })
+
+    ipcMain.handle('db:deleteSugerenciaPieza', (event, idPieza: number) => {
+        const db = DB.getInstance();
+        try {
+            db.prepare("DELETE FROM piezas_sugerencias WHERE id = ?").run(idPieza);
+            return true;
+        } catch (e:SqliteError) {
+            console.log(e.message);
+            return false;
+        }
+    });
+
+    ipcMain.handle('db:updateSugerenciaPieza', (event, pieza:SugerenciaPieza) => {
+        const db = DB.getInstance();
+        try {
+            db.prepare("UPDATE piezas_sugerencias SET clave = ?, nombre = ?, precio_individual = ? WHERE id = ?")
+                .run(pieza.clave, pieza.nombre, pieza.precio_individual, pieza.id);
+            return true;
+        } catch (e:SqliteError) {
+            console.log(e.message);
+            return false;
+        }
     })
 }
