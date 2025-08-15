@@ -28,8 +28,16 @@
             </template>
         </el-dialog>
         <!-- Aquí puedes agregar más secciones con otros encabezados -->
+        <el-header>
+            <h2>Copia de seguridad</h2>
+        </el-header>
+        <el-main>
+            <el-button type="primary" @click="realizarCopiaSeguridad">Realizar copia de seguridad</el-button>
+            <el-button type="warning" @click="cargarCopiaSeguridad" style="margin-left: 10px;">Cargar copia de seguridad</el-button>
+        </el-main>
     </el-container>
 </template>
+
 
 <script setup lang="ts">
 import { onMounted, ref, toRaw } from 'vue'
@@ -41,7 +49,6 @@ const piezas = ref<SugerenciaPieza[]>([]);
 const editingPieza = ref<SugerenciaPieza>();
 const editandoPieza = ref<boolean>(false);
 
-
 var handleEdit = (pieza: SugerenciaPieza) => {
     editingPieza.value = { ...pieza }; // Clonar el objeto para evitar mutaciones directas
     editandoPieza.value = true; // Abrir el diálogo de edición
@@ -50,7 +57,6 @@ var handleEdit = (pieza: SugerenciaPieza) => {
 function handleCancelEdit() {
     editandoPieza.value = false; // Cerrar el diálogo sin guardar cambios
 }
-
 
 const savePieza = () => {
     if (editingPieza.value) {
@@ -87,7 +93,34 @@ function fetchPiezas() {
         ElMessage.error('Error al cargar las sugerencias de piezas');
     });
 }
-// Datos de ejemplo para la tabla
+
+// Método para realizar la copia de seguridad
+function realizarCopiaSeguridad() {
+    window.electronApi.realizarCopiaSeguridad().then((response: boolean) => {
+        if (response) {
+            ElMessage.success('Copia de seguridad realizada correctamente');
+        } else {
+            ElMessage.error('Error al realizar la copia de seguridad');
+        }
+    }).catch((error: any) => {
+        console.error('Error al realizar la copia de seguridad:', error);
+        ElMessage.error('Error al realizar la copia de seguridad');
+    });
+}
+
+// Método para cargar una copia de seguridad
+function cargarCopiaSeguridad() {
+    window.electronApi.cargarCopiaSeguridad().then((response: boolean) => {
+        if (response) {
+            ElMessage.success('Copia de seguridad cargada correctamente. Reinicie la aplicación para aplicar los cambios.');
+        } else {
+            ElMessage.error('Error al cargar la copia de seguridad');
+        }
+    }).catch((error: any) => {
+        console.error('Error al cargar la copia de seguridad:', error);
+        ElMessage.error('Error al cargar la copia de seguridad');
+    });
+}
 
 </script>
 

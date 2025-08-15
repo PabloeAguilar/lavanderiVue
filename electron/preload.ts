@@ -1,3 +1,4 @@
+
 import { ipcRenderer, contextBridge } from 'electron'
 import {CustomResponse} from "./shared/CustomResponse.ts";
 import {Cliente, SugerenciaPieza} from "./shared/Types.ts";
@@ -95,8 +96,19 @@ contextBridge.exposeInMainWorld('electronApi', {
     return ipcRenderer.invoke('db:loadSugerenciasPiezas');
   },
 
+
   actualizarSugerenciaPieza: (sugerencia: SugerenciaPieza) => {
     return ipcRenderer.invoke('db:updateSugerenciaPieza', sugerencia);
+  },
+
+  // Copia de seguridad
+  realizarCopiaSeguridad: () => {
+    return ipcRenderer.invoke('db:realizarCopiaSeguridad');
+  },
+
+    // Cargar copia de seguridad
+  cargarCopiaSeguridad: () => {
+    return ipcRenderer.invoke('db:cargarCopiaSeguridad');
   },
 
 

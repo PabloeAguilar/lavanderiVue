@@ -1,9 +1,10 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import {setupDbIpcHandlers} from './db/handlers.ts'
-import {setupPrintUtilities} from "./utilities/printUtilities.ts";
+import { setupDbIpcHandlers } from './db/handlers.ts'
+import { setupPrintUtilities } from "./utilities/printUtilities.ts";
+import fs from 'fs';
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -74,4 +75,48 @@ app.whenReady().then(() => {
   setupDbIpcHandlers();
   setupPrintUtilities()
   createWindow();
+  // Handler para copia de seguridad
+  ipcMain.handle('db:realizarCopiaSeguridad', async () => {
+    try {
+      const userDataPath = app.getPath('userData');
+      const dbPath = path.join(userDataPath, 'my-database.sqlite');
+      // Pedir al usuario la ubicación de guardado
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Guardar copia de seguridad',
+        defaultPath: `lavanderia-backup-${new Date().toISOString().slice(0, 10)}.sqlite`,
+        filters: [
+          { name: 'SQLite Database', extensions: ['sqlite'] },
+          { name: 'Todos los archivos', extensions: ['*'] }
+        ]
+      });
+      if (canceled || !filePath) return false;
+      await fs.promises.copyFile(dbPath, filePath);
+      return true;
+    } catch (e) {
+      console.error('Error al realizar copia de seguridad:', e);
+      return false;
+    }
+  });
+
+  ipcMain.handle('db:cargarCopiaSeguridad', async () => {
+    try {
+      const userDataPath = app.getPath('userData');
+      const dbPath = path.join(userDataPath, 'my-database.sqlite');
+      // Pedir al usuario el archivo de backup
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: 'Seleccionar copia de seguridad',
+        filters: [
+          { name: 'SQLite Database', extensions: ['sqlite'] },
+          { name: 'Todos los archivos', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      });
+      if (canceled || !filePaths || filePaths.length === 0) return false;
+      await fs.promises.copyFile(filePaths[0], dbPath);
+      return true;
+    } catch (e) {
+      console.error('Error al cargar copia de seguridad:', e);
+      return false;
+    }
+  });
 })
